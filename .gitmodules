@@ -1,0 +1,3 @@
+[submodule "Terrarium"]
+	path = Terrarium
+	url = https://github.com/PedalPCB/Terrarium.git
