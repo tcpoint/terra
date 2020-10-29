@@ -1,5 +1,8 @@
 # terra
 
+This code is derived from the DaisyExamples repository.
+
+
 This is all work in progress stuff.  I'm still learning the platform.
 Hopefully, it helps get somebody started.
 
