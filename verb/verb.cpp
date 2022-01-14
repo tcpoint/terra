@@ -16,31 +16,32 @@ bool bypass;
 ReverbSc verb;
 
 // This runs at a fixed rate, to prepare audio samples
-void callback(float *in, float *out, size_t size)
-{
+void callback(AudioHandle::InputBuffer  in,
+                   AudioHandle::OutputBuffer out,
+                   size_t                    size){
     float dryl, dryr, wetl, wetr, sendl, sendr;
-    hw.DebounceControls();
+    hw.ProcessAllControls();
     verb.SetFeedback(vtime.Process());
     verb.SetLpFreq(vfreq.Process());
     vsend.Process(); // Process Send to use later
     if (hw.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
         bypass = !bypass;
-    for (size_t i = 0; i < size; i+=2)
+    for (size_t i = 0; i < size; i++)
     {
-        dryl = in[i];
-        dryr = in[i+1];
+        dryl = in[0][i];
+        dryr = in[1][i];
         sendl = dryl * vsend.Value();
         sendr = dryr * vsend.Value();
         verb.Process(sendl, sendr, &wetl, &wetr);
         if (bypass)
         {
-            out[i] = in[i]; // left
-            out[i+1] = in[i+1]; // right
+            out[0][i] = in[0][i]; // left
+            out[1][i] = in[1][i]; // right
         }
         else
         {
-            out[i] = dryl + wetl;
-            out[i+1] = dryr + wetr;
+            out[0][i] = dryl + wetl;
+            out[1][i] = dryr + wetr;
         }
     }
 }
@@ -70,7 +71,7 @@ int main(void)
     while(1) 
     {
         // Do Stuff InfInitely Here
-        dsy_system_delay(10);
+        hw.DelayMs(10);
         dsy_gpio_write(&led1, bypass ? 0 : 1);
     }
 }

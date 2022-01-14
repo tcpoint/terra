@@ -27,8 +27,8 @@ bool last_autogain = false;
 
 void ProcessControls()
 {
-    petal.UpdateAnalogControls();
-    petal.DebounceControls();
+    petal.ProcessAllControls();
+    //petal.DebounceControls();
 
     //knobs
     float currentAttack = attack.Process();
@@ -92,21 +92,23 @@ void Init(float samplerate)
     makeup.Init(petal.knob[Terrarium::KNOB_5], 1.0f, 40.0f, Parameter::LINEAR);  // log?
 }
 
-static void AudioCallback(float *in, float *out, size_t size)
+static void AudioCallback(AudioHandle::InputBuffer  in,
+                   AudioHandle::OutputBuffer out,
+                   size_t                    size)
 {
     ProcessControls();
 
-    for(size_t i = 0; i < size; i+=2)
+    for(size_t i = 0; i < size; i++)
     {
         if(bypass)
         {
-            out[i] = in[i];
-            out[i + 1] = in[i + 1];
+            out[0][i] = in[0][i];
+            out[1][i] = in[1][i];
         }
         else
         {
-            out[i] = comp.Process(in[i]);
-            out[i + 1] = comp.Process(in[i + 1]);            
+            out[0][i] = comp.Process(in[0][i]);
+            out[1][i] = comp.Process(in[1][i]);            
         }
     }
 }
@@ -131,7 +133,6 @@ int main(void)
     while(1)
     {
         dsy_gpio_write(&led1, bypass ? 0.0f : 1.0f);
-        dsy_system_delay(6);
+        petal.DelayMs(6);
     }
 }
-

@@ -1,5 +1,5 @@
 # Project Name
-TARGET = delay
+TARGET = multidelay
 
 # Sources
 CPP_SOURCES = MultiDelay.cpp
