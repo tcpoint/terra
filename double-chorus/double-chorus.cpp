@@ -34,7 +34,7 @@ Led led1;
 
 void processControls()
 {
-    static int processCnt = 0;
+    static unsigned int processCnt = 0;
     switch(processCnt++ % 8) {
     case 0:
         {
@@ -79,7 +79,6 @@ static void AudioCallback(InputBuffer in, OutputBuffer out, size_t size)
         {
             float chorus_sigs = ch.Process(sample);
             // change to crossfade
-            // out[0][i] = out[1][i] = (chorus_sigs * wet) + in[0][i] * (1.f - wet);
             float mixed = cfade.Process(sample, chorus_sigs);
             // antialias filter here????
             float makeup_sample = mixed * makeup;
@@ -117,6 +116,7 @@ int main(void)
 
     effectOn  = false;
     wet       = .9f;
+    cfade.SetPos(wet);
     deltarget = del = 0.f;
     lfotarget = lfo = 0.f;
 
