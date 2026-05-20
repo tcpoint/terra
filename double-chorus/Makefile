@@ -1,8 +1,8 @@
 # Project Name
-TARGET = multidelay
+TARGET = double-chorus
 
 # Sources
-CPP_SOURCES = MultiDelay.cpp
+CPP_SOURCES = double-chorus.cpp dchorus.cpp biquad.cpp
 
 # Library Locations
 LIBDAISY_DIR = ../../DaisyExamples/libDaisy

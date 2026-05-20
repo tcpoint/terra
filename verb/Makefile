@@ -1,11 +1,13 @@
 # Project Name
 TARGET = verb
 
+USE_DAISYSP_LGPL = 1
+
 # Sources
 CPP_SOURCES = verb.cpp
 
 # Library Locations
-LIBDAISY_DIR = ../../DaisyExamples/libdaisy
+LIBDAISY_DIR = ../../DaisyExamples/libDaisy
 DAISYSP_DIR = ../../DaisyExamples/DaisySP
 
 # Core location, and generic makefile.

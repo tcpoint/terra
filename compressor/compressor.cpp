@@ -27,58 +27,79 @@ bool last_autogain = false;
 
 void ProcessControls()
 {
-    petal.ProcessAllControls();
-    //petal.DebounceControls();
+    static int processCnt = 0;
+
+    switch(processCnt++ % 8)
+    {
+    case 0:
+        {
+            float currentAttack = attack.Process();
+            if(currentAttack != comp.GetAttack()) {
+                comp.SetAttack(currentAttack);
+            }
+            float currentRelease = attack.Process();
+            if(currentRelease != comp.GetRelease()) {
+                comp.SetRelease(currentAttack);
+            }
+        }
+        break;
+    case 2:
+        {
+            float currentRatio = ratio.Process();
+            if(currentRatio != comp.GetRatio()) {
+                comp.SetRatio(currentRatio);
+            }
+        }
+        petal.switches[Terrarium::FOOTSWITCH_1].Debounce();
+        if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
+        {
+            bypass = !bypass;
+        }
+        break;
+    case 4:
+        {
+            float currentThreshold = threshold.Process();
+            if(currentThreshold != comp.GetThreshold())
+            {
+                comp.SetThreshold(currentThreshold);
+            }
+        }
+        break;
+    case 6:
+        {
+            petal.switches[Terrarium::SWITCH_1].Debounce();
+            autogain = petal.switches[Terrarium::SWITCH_1].Pressed();
+            if(autogain)
+            {
+                if(autogain != last_autogain)
+                {
+                    last_autogain = true;
+                    comp.AutoMakeup(true);
+                }
+            }
+            else
+            {
+                if(last_autogain)
+                {
+                    comp.AutoMakeup(false);
+                }
+                last_autogain = false;
+                float currentMakeup = makeup.Process();
+                if(currentMakeup != comp.GetMakeup())
+                {
+                    comp.SetMakeup(currentMakeup);
+                }
+
+            }
+        }
+        break;
+    }
 
     //knobs
-    float currentAttack = attack.Process();
-    if(currentAttack != comp.GetAttack()) {
-        comp.SetAttack(currentAttack);
-    }
-    float currentRelease = attack.Process();
-    if(currentRelease != comp.GetRelease()) {
-        comp.SetRelease(currentAttack);
-    }
-    float currentRatio = ratio.Process();
-    if(currentRatio != comp.GetRatio()) {
-        comp.SetRatio(currentRatio);
-    }
-    float currentThreshold = threshold.Process();
-    if(currentThreshold != comp.GetThreshold())
-    {
-        comp.SetThreshold(currentThreshold);
-    }
 
     // autogain switch
-    autogain = petal.switches[Terrarium::SWITCH_1].Pressed();
-    if(autogain)
-    {
-        if(autogain != last_autogain)
-        {
-            last_autogain = true;
-            comp.AutoMakeup(true);
-        }
-    }
-    else
-    {
-        if(last_autogain)
-        {
-            comp.AutoMakeup(false);
-        }
-        last_autogain = false;
-        float currentMakeup = makeup.Process();
-        if(currentMakeup != comp.GetMakeup())
-        {
-            comp.SetMakeup(currentMakeup);
-        }
-
-    }
 
     //footswitch
-    if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
-    {
-        bypass = !bypass;
-    }
 }
 
 void Init(float samplerate)
@@ -117,6 +138,7 @@ int main(void)
 {
     float samplerate;
     petal.Init(); // Initialize hardware (daisy seed, and petal)
+    petal.SetAudioBlockSize(1);////////Adjust the blocksize 
     samplerate = petal.AudioSampleRate();
     Init(samplerate);
 

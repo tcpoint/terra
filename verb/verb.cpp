@@ -18,14 +18,27 @@ ReverbSc verb;
 // This runs at a fixed rate, to prepare audio samples
 void callback(AudioHandle::InputBuffer  in,
                    AudioHandle::OutputBuffer out,
-                   size_t                    size){
+                   size_t                    size)
+{
+    static int processCnt = 0;
     float dryl, dryr, wetl, wetr, sendl, sendr;
-    hw.ProcessAllControls();
-    verb.SetFeedback(vtime.Process());
-    verb.SetLpFreq(vfreq.Process());
-    vsend.Process(); // Process Send to use later
-    if (hw.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
-        bypass = !bypass;
+    switch(processCnt++ % 8)
+    {
+    case 0:
+        verb.SetFeedback(vtime.Process());
+        break;
+    case 2:
+        verb.SetLpFreq(vfreq.Process());
+        break;
+    case 4:
+        vsend.Process(); // Process Send to use later
+        break;
+    case 6:
+        hw.switches[Terrarium::FOOTSWITCH_1].Debounce();
+        if (hw.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
+            bypass = !bypass;
+        break;
+    }
     for (size_t i = 0; i < size; i++)
     {
         dryl = in[0][i];
@@ -52,6 +65,7 @@ int main(void)
 
     hw.Init();
     samplerate = hw.AudioSampleRate();
+    hw.SetAudioBlockSize(1);////////Adjust the blocksize 
 
     vtime.Init(hw.knob[Terrarium::KNOB_1], 0.6f, 0.999f, Parameter::LOGARITHMIC);
     vfreq.Init(hw.knob[Terrarium::KNOB_2], 500.0f, 20000.0f, Parameter::LOGARITHMIC);
@@ -70,7 +84,7 @@ int main(void)
 
     while(1) 
     {
-        // Do Stuff InfInitely Here
+        // Do Stuff Infinitely Here
         hw.DelayMs(10);
         dsy_gpio_write(&led1, bypass ? 0 : 1);
     }
