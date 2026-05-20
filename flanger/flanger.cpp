@@ -24,11 +24,11 @@ Led led1;
 
 void InitControls()
 {
-    delayParam.Init(petal.knob[Terrarium::KNOB_1], 0.0, 1.0, Parameter::LINEAR);
-    feedbackParam.Init(petal.knob[Terrarium::KNOB_2], 0.0, 1.0, Parameter::LINEAR);
-    mixParam.Init(petal.knob[Terrarium::KNOB_3], 0.0, 1.0, Parameter::LINEAR);
-    lfoFreqParam.Init(petal.knob[Terrarium::KNOB_4], 0.0, 10.0, Parameter::LOGARITHMIC);
-    lfoDepthParam.Init(petal.knob[Terrarium::KNOB_5], 0.0, 1.0, Parameter::LINEAR);
+    delayParam.Init(petal.knob[Terrarium::KNOB_1],    0.0f,  1.0f,  Parameter::LINEAR);
+    feedbackParam.Init(petal.knob[Terrarium::KNOB_2], 0.0f,  1.0f,  Parameter::LINEAR);
+    mixParam.Init(petal.knob[Terrarium::KNOB_3],      0.0f,  1.0f,  Parameter::LINEAR);
+    lfoFreqParam.Init(petal.knob[Terrarium::KNOB_4],  0.0f,  10.0f, Parameter::LOGARITHMIC);
+    lfoDepthParam.Init(petal.knob[Terrarium::KNOB_5], 0.0f,  1.0f,  Parameter::LINEAR);
 
     led1.Init(petal.seed.GetPin(Terrarium::LED_1), false);
 }
@@ -72,11 +72,14 @@ void AudioCallback(AudioHandle::InputBuffer  in,
         fonepole(lfoDepth, lfotarget, .0001f);
         flanger.SetLfoDepth(lfoDepth);
 
-        out[0][i] = out[1][i] = in[0][i];
         if(effectOn)
         {
             float sig = flanger.Process(in[0][i]);
             out[0][i] = out[1][i] = sig * wet + in[0][i] * (1.f - wet);
+        }
+        else
+        {
+            out[0][i] = out[1][i] = in[0][i];
         }
     }
 }
@@ -88,13 +91,17 @@ int main(void)
     petal.SetAudioBlockSize(1);
     InitControls();
 
-    deltarget = del = 0.f;
-    lfotarget = lfoDepth = 0.f;
     flanger.Init(sample_rate);
 
     petal.StartAdc();
     petal.ProcessAnalogControls();
+    deltarget = del = delayParam.Process();
+    flanger.SetDelay(del);
+    flanger.SetFeedback(feedbackParam.Process());
     wet = mixParam.Process();
+    flanger.SetLfoFreq(lfoFreqParam.Process());
+    lfotarget = lfoDepth = lfoDepthParam.Process();
+    flanger.SetLfoDepth(lfoDepth);
     led1.Set(0.0f);
 
     petal.StartAudio(AudioCallback);
