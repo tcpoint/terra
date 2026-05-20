@@ -2,8 +2,6 @@
 #include "daisy_petal.h"
 #include "terrarium.h"
 
-#include <string>
-
 using namespace daisy;
 using namespace daisysp;
 using namespace terrarium;
@@ -20,7 +18,6 @@ Parameter makeup;
 
 dsy_gpio led1;
 
-// int   drywet;
 bool  bypass;
 bool autogain = false;
 bool last_autogain = false;
@@ -37,9 +34,9 @@ void ProcessControls()
             if(currentAttack != comp.GetAttack()) {
                 comp.SetAttack(currentAttack);
             }
-            float currentRelease = attack.Process();
+            float currentRelease = release.Process();
             if(currentRelease != comp.GetRelease()) {
-                comp.SetRelease(currentAttack);
+                comp.SetRelease(currentRelease);
             }
         }
         break;
@@ -95,11 +92,6 @@ void ProcessControls()
         break;
     }
 
-    //knobs
-
-    // autogain switch
-
-    //footswitch
 }
 
 void Init(float samplerate)
@@ -110,7 +102,7 @@ void Init(float samplerate)
     release.Init(petal.knob[Terrarium::KNOB_2], 0.01f, 1.0f, Parameter::EXPONENTIAL);
     ratio.Init(petal.knob[Terrarium::KNOB_3], 1.0f, 40.0f, Parameter::LINEAR);
     threshold.Init(petal.knob[Terrarium::KNOB_4], -80.0f, 0.0f, Parameter::LINEAR);
-    makeup.Init(petal.knob[Terrarium::KNOB_5], 1.0f, 40.0f, Parameter::LINEAR);  // log?
+    makeup.Init(petal.knob[Terrarium::KNOB_5], 1.0f, 40.0f, Parameter::EXPONENTIAL);
 }
 
 static void AudioCallback(AudioHandle::InputBuffer  in,
@@ -128,8 +120,9 @@ static void AudioCallback(AudioHandle::InputBuffer  in,
         }
         else
         {
-            out[0][i] = comp.Process(in[0][i]);
-            out[1][i] = comp.Process(in[1][i]);            
+            float key = fmaxf(fabsf(in[0][i]), fabsf(in[1][i]));
+            out[0][i] = comp.Process(in[0][i], key);
+            out[1][i] = comp.Apply(in[1][i]);
         }
     }
 }
@@ -144,17 +137,17 @@ int main(void)
 
     bypass = true;
 
-    petal.StartAdc();
-    petal.StartAudio(AudioCallback);
-
     led1.pin = petal.seed.GetPin(22);
     led1.mode = DSY_GPIO_MODE_OUTPUT_PP;
     led1.pull = DSY_GPIO_NOPULL;
     dsy_gpio_init(&led1);
 
+    petal.StartAdc();
+    petal.StartAudio(AudioCallback);
+
     while(1)
     {
-        dsy_gpio_write(&led1, bypass ? 0.0f : 1.0f);
+        dsy_gpio_write(&led1, bypass ? 0 : 1);
         petal.DelayMs(6);
     }
 }
