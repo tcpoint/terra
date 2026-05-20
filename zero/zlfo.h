@@ -17,11 +17,11 @@ https://opensource.org/licenses/MIT.
 /** @file zflo.h */
 /** Synthesis of several waveforms, including polyBLEP bandlimited waveforms.
 */
-class ZOscillator
+class LFOEngine
 {
   public:
-    ZOscillator() {}
-    ~ZOscillator() {}
+    LFOEngine() {}
+    ~LFOEngine() {}
     /** Choices for output waveforms, POLYBLEP are appropriately labeled. Others are naive forms.
     */
     enum
@@ -135,7 +135,7 @@ public:
     };
 
 private:
-    ZOscillator osc;
+    LFOEngine osc;
 
     float depth;
     float manual;

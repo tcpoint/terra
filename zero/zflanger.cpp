@@ -28,7 +28,7 @@ float ZFlanger::process(float in)
 {
     float lfo_sig = lfo.process();
     float curr_delay = kDelayLength2 + (lfo_sig * (delay / 2.0f));
-    del.SetDelay((size_t)fmax(1.0f, curr_delay));
+    del.SetDelay((size_t)(curr_delay < 1.0f ? 1.0f : curr_delay));
 
     float out = del.Read();
     float delayed_in = del2.Read();

@@ -6,7 +6,7 @@
 using namespace daisysp;
 
 // CrossFade cfade;
-float ZOscillator::Process()
+float LFOEngine::Process()
 {
     float out, t;
     switch(waveform_)
@@ -42,7 +42,7 @@ float ZOscillator::Process()
     return out * amp_;
 }
 
-float ZOscillator::CalcPhaseInc(float f)
+float LFOEngine::CalcPhaseInc(float f)
 {
     return f * sr_recip_;
 }
@@ -96,16 +96,16 @@ void ZLFO::setWaveform(uint8_t wf)
     }
     switch(wf) {
     case WV_TRIANGLE:
-        wf = ZOscillator::WAVE_TRI;
+        wf = LFOEngine::WAVE_TRI;
         break;
     case WV_SINE:
-        wf = ZOscillator::WAVE_SIN;
+        wf = LFOEngine::WAVE_SIN;
         break;
     case WV_SAW:
-        wf = ZOscillator::WAVE_SAW;
+        wf = LFOEngine::WAVE_SAW;
         break;
     case WV_RAMP:
-        wf = ZOscillator::WAVE_RAMP;
+        wf = LFOEngine::WAVE_RAMP;
         break;
     }
     osc.SetWaveform(wf);
