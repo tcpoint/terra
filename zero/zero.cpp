@@ -79,8 +79,6 @@ void AudioCallback(AudioHandle::InputBuffer  in,
                    AudioHandle::OutputBuffer out,
                    size_t                    size)
 {
-    ProcessControls();
-
     for(size_t i = 0; i < size; i++)
     {
         fonepole(del, deltarget, .0001f);
@@ -114,8 +112,8 @@ int main(void)
     petal.StartAudio(AudioCallback);
     while(1)
     {
-        // avoids time in loop???
         petal.DelayMs(1);
+        ProcessControls();
         led1.Update();
     }
 }

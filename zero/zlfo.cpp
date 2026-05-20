@@ -67,7 +67,8 @@ float ZLFO::process()
 void ZLFO::setDepth(float depth)
 {
     this->depth = fclamp(depth, 0.0, 0.93);
-    osc.SetAmp(depth);  // ????
+    osc.SetAmp(this->depth);
+    this->offset = (1.0f - this->depth) * this->manual;
 }
 
 
@@ -82,7 +83,7 @@ void ZLFO::setFrequency(float freq)
 void ZLFO::setManual(float manual)
 {
     this->manual = manual;
-    this-> offset = (1.0 - this->depth) * manual;
+    this->offset = (1.0f - this->depth) * manual;
 }
 
 void ZLFO::setWaveform(uint8_t wf)

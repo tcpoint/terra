@@ -48,13 +48,13 @@ void ZFlanger::setFeedback(float feedback)
 // delay:  % of delay 
 void ZFlanger::setDelay(float delay)
 {
-    delay = (.1f + delay * 6.9); //.1 to 7 ms
+    delay = (.1f + delay * 6.9f); //.1 to 7 ms
     setDelayMs(delay);
 }
 
 void ZFlanger::setDelayMs(float ms)
 {
-    ms = fmax(0.1, ms);
+    ms = ms < 0.1f ? 0.1f : ms;
     delay = ms * 0.001f * sample_rate; //ms to samples
 }
 
