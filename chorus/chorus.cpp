@@ -25,7 +25,7 @@ Led led1;
 
 void ProcessControls()
 {
-    static int processCnt = 0;
+    static uint32_t processCnt = 0;
 
     switch(processCnt % 8)
     {
@@ -42,6 +42,7 @@ void ProcessControls()
         break;
     case 4:
         ch.SetFeedback(feedbackParam.Process());
+        wet = mixParam.Process();
         break;
     case 6:
         petal.ProcessDigitalControls();
@@ -50,7 +51,6 @@ void ProcessControls()
             effectOn = !effectOn;
             led1.Set(effectOn ? 1.0f : 0.0f);
         }
-        wet = mixParam.Process();
         break;
     }
     processCnt++;
@@ -68,23 +68,25 @@ void AudioCallback(AudioHandle::InputBuffer  in,
         fonepole(lfo, lfotarget, .0001f);
         ch.SetLfoDepth(lfo);
 
-        out[0][i] = out[1][i] = in[0][i];
-
         if(effectOn)
         {
             ch.Process(in[0][i]);
             out[0][i] = out[1][i] = ((ch.GetLeft() + ch.GetRight()) * wet) / 2 + in[0][i] * (1.f - wet);
+        }
+        else
+        {
+            out[0][i] = out[1][i] = in[0][i];
         }
     }
 }
 
 void InitControls()
 {
-    delayParam.Init(petal.knob[Terrarium::KNOB_1], 0.0, 1.0, Parameter::LINEAR);
-    speedParam.Init(petal.knob[Terrarium::KNOB_2], 0.0, 1.0, Parameter::LINEAR);
-    depthParam.Init(petal.knob[Terrarium::KNOB_3], 0.0, 1.0, Parameter::LINEAR);
-    mixParam.Init(petal.knob[Terrarium::KNOB_4], 0.0, 1.0, Parameter::LINEAR);
-    feedbackParam.Init(petal.knob[Terrarium::KNOB_5], 0.0, 1.0, Parameter::LINEAR);
+    delayParam.Init(petal.knob[Terrarium::KNOB_1],    0.0f, 1.0f, Parameter::LINEAR);
+    speedParam.Init(petal.knob[Terrarium::KNOB_2],    0.0f, 1.0f, Parameter::LINEAR);
+    depthParam.Init(petal.knob[Terrarium::KNOB_3],    0.0f, 1.0f, Parameter::LINEAR);
+    mixParam.Init(petal.knob[Terrarium::KNOB_4],      0.0f, 1.0f, Parameter::LINEAR);
+    feedbackParam.Init(petal.knob[Terrarium::KNOB_5], 0.0f, 1.0f, Parameter::LINEAR);
 
     led1.Init(petal.seed.GetPin(Terrarium::LED_1), false);
 }
@@ -97,13 +99,20 @@ int main(void)
     InitControls();
     ch.Init(sample_rate);
 
-    effectOn  = false;
-    deltarget = del = 0.f;
-    lfotarget = lfo = 0.f;
+    effectOn = false;
 
     petal.StartAdc();
     petal.ProcessAnalogControls();
+    {
+        float k = speedParam.Process();
+        ch.SetLfoFreq(k * k * 20.f);
+    }
+    deltarget = del = delayParam.Process();
+    ch.SetDelay(del);
+    lfotarget = lfo = depthParam.Process();
+    ch.SetLfoDepth(lfo);
     wet = mixParam.Process();
+    ch.SetFeedback(feedbackParam.Process());
     led1.Set(0.0f);
 
     petal.StartAudio(AudioCallback);
