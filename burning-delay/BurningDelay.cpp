@@ -2,8 +2,6 @@
 #include "daisy_petal.h"
 #include "terrarium.h"
 
-#include <string>
-
 #define MAX_DELAY static_cast<size_t>(48000 * 0.3f)
 
 using namespace daisy;
@@ -13,12 +11,12 @@ using namespace terrarium;
 DaisyPetal petal;
 
 DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delayMem;
-float wetdry = 0.5f;
+float wetdry;
 OnePole tone;
 
 struct Delay
 {
-    DelayLine<float, MAX_DELAY>  *delay;
+    DelayLine<float, MAX_DELAY> *delay;
     float                        currentDelay;
     float                        delayTarget;
     float                        feedback;
@@ -27,7 +25,7 @@ struct Delay
     {
         fonepole(currentDelay, delayTarget, .0002f);
         delay->SetDelay(currentDelay);
-        float read = delay->Read();
+        float read    = delay->Read();
         float degraded = tone.Process(read);
         delay->Write(in + feedback * degraded);
         return degraded;
@@ -40,19 +38,40 @@ Parameter feedbackParam;
 Parameter mixParam;
 CrossFade cfade;
 
-Led led1;
+Led  led1;
+bool passThruOn;
 
-// int   drywet;
-bool  passThruOn;
+void ProcessControls()
+{
+    static uint32_t processCnt = 0;
+    switch(processCnt % 8) {
+    case 0:
+        petal.ProcessAnalogControls();
+        delay.delayTarget = delayParams.Process();
+        break;
+    case 2:
+        delay.feedback = feedbackParam.Process();
+        break;
+    case 4:
+        wetdry = mixParam.Process();
+        cfade.SetPos(wetdry);
+        break;
+    case 6:
+        petal.ProcessDigitalControls();
+        if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
+        {
+            passThruOn = !passThruOn;
+            led1.Set(passThruOn ? 0.0f : 1.0f);
+        }
+        break;
+    }
+    processCnt++;
+}
 
-void ProcessControls();
-
-static void AudioCallback(AudioHandle::InputBuffer  in,
+void AudioCallback(AudioHandle::InputBuffer  in,
                    AudioHandle::OutputBuffer out,
                    size_t                    size)
 {
-    ProcessControls();
-
     for(size_t i = 0; i < size; i++)
     {
         float sample = in[0][i];
@@ -64,85 +83,52 @@ static void AudioCallback(AudioHandle::InputBuffer  in,
         }
 
         float delay_sample = delay.Process(sample);
-        cfade.SetPos(wetdry);
-        float mix = cfade.Process(sample, delay_sample);
-        out[0][i] = out[1][i] = mix;
+        out[0][i] = out[1][i] = cfade.Process(sample, delay_sample);
     }
 }
 
-void InitControls(float samplerate) {
+void InitControls(float samplerate)
+{
     delayParams.Init(petal.knob[Terrarium::KNOB_1],
-                   samplerate * .05,
-                   MAX_DELAY,
-                   Parameter::LINEAR);
-
-    feedbackParam.Init(petal.knob[Terrarium::KNOB_3], 0.0, 1.0, Parameter::LINEAR);
-    mixParam.Init(petal.knob[Terrarium::KNOB_2], 0.0, 1.0, Parameter::LINEAR);
-    // Initialize & set params for CrossFade object
+                     samplerate * .05f,
+                     MAX_DELAY,
+                     Parameter::LINEAR);
+    feedbackParam.Init(petal.knob[Terrarium::KNOB_3], 0.0f, 1.0f, Parameter::LINEAR);
+    mixParam.Init(petal.knob[Terrarium::KNOB_2],      0.0f, 1.0f, Parameter::LINEAR);
     cfade.Init();
     cfade.SetCurve(CROSSFADE_CPOW);
 
     led1.Init(petal.seed.GetPin(Terrarium::LED_1), false);
 }
 
-void InitDelay(float samplerate)
-{
-    delayMem.Init();
-    delay.delay = &delayMem;
-    delay.currentDelay = delay.delayTarget = samplerate * 0.5f;
-    delay.feedback = 0.5f;
-}
-
 int main(void)
 {
-    float samplerate;
-    petal.Init(); // Initialize hardware (daisy seed, and petal)
-    samplerate = petal.AudioSampleRate();
-    petal.SetAudioBlockSize(1);////////Adjust the blocksize
+    petal.Init();
+    float samplerate = petal.AudioSampleRate();
+    petal.SetAudioBlockSize(1);
 
     InitControls(samplerate);
-    InitDelay(samplerate);
+
+    delayMem.Init();
+    delay.delay = &delayMem;
     tone.Init();
     tone.SetFrequency(7000.0f / samplerate);
 
     passThruOn = false;
 
     petal.StartAdc();
-    petal.StartAudio(AudioCallback);
-
+    petal.ProcessAnalogControls();
+    delay.currentDelay = delay.delayTarget = delayParams.Process();
+    delay.feedback     = feedbackParam.Process();
+    wetdry             = mixParam.Process();
+    cfade.SetPos(wetdry);
     led1.Set(1.0f);
 
+    petal.StartAudio(AudioCallback);
     while(1)
     {
         System::Delay(1);
-    }
-}
-
-uint32_t processCnt = 0;
-void ProcessControls()
-{
-    switch(processCnt++ % 8) {
-    case 0:
-        petal.ProcessAnalogControls();        
-        delay.delayTarget = delayParams.Process();
-        break;
-    case 2:
-        petal.ProcessAnalogControls();
-        delay.feedback = feedbackParam.Process();
-        break;
-    case 4:
-        petal.ProcessAnalogControls();        
-        wetdry = mixParam.Process();
-        break;
-    case 6:
-        petal.ProcessDigitalControls();        
-        //footswitch
-        if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
-        {
-            passThruOn = !passThruOn;
-            led1.Set(passThruOn ? 0.0f : 1.0f);
-        }
+        ProcessControls();
         led1.Update();
-        break;
     }
 }
