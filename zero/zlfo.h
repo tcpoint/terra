@@ -1,29 +1,15 @@
-/*
-Copyright (c) 2020 Electrosmith, Corp
-
-Use of this source code is governed by an MIT-style
-license that can be found in the LICENSE file or at
-https://opensource.org/licenses/MIT.
-*/
-
 #pragma once
-#ifndef DSY_ZFLO_H
-#define DSY_ZFLO_H
-#ifdef __cplusplus
 
 #include <stdint.h>
 #include "dsp.h"
 
-/** @file zflo.h */
-/** Synthesis of several waveforms, including polyBLEP bandlimited waveforms.
-*/
+/** Naive waveform oscillator for use as an LFO. */
 class LFOEngine
 {
   public:
     LFOEngine() {}
     ~LFOEngine() {}
-    /** Choices for output waveforms, POLYBLEP are appropriately labeled. Others are naive forms.
-    */
+
     enum
     {
         WAVE_SIN,
@@ -33,16 +19,6 @@ class LFOEngine
         WAVE_LAST,
     };
 
-
-    /** Initializes the Oscillator
-
-        \param sample_rate - sample rate of the audio engine being run, and the frequency that the Process function will be called.
-
-        Defaults:
-        - freq_ = 100 Hz
-        - amp_ = 0.5
-        - waveform_ = sine wave.
-    */
     void Init(float sample_rate)
     {
         sr_        = sample_rate;
@@ -57,52 +33,26 @@ class LFOEngine
         eor_       = true;
     }
 
-
-    /** Changes the frequency of the Oscillator, and recalculates phase increment.
-    */
     inline void SetFreq(const float f)
     {
         freq_      = f;
         phase_inc_ = CalcPhaseInc(f);
     }
 
-
-    /** Sets the amplitude of the waveform.
-    */
-    inline void SetAmp(const float a) { amp_ = a; }
-    /** Sets the waveform to be synthesized by the Process() function.
-    */
+    inline void SetAmp(const float a)  { amp_ = a; }
     inline void SetWaveform(const uint8_t wf)
     {
         waveform_ = wf < WAVE_LAST ? wf : WAVE_SIN;
     }
 
-    /** Returns true if cycle is at end of rise. Set during call to Process.
-    */
-    inline bool IsEOR() { return eor_; }
-
-    /** Returns true if cycle is at end of cycle. Set during call to Process.
-    */
-    inline bool IsEOC() { return eoc_; }
-
-    /** Returns true if cycle rising.
-    */
-    inline bool IsRising() { return phase_ < 0.5f; }
-
-    /** Returns true if cycle falling.
-    */
+    inline bool IsEOR()     { return eor_; }
+    inline bool IsEOC()     { return eoc_; }
+    inline bool IsRising()  { return phase_ < 0.5f; }
     inline bool IsFalling() { return phase_ >= 0.5f; }
 
-    /** Processes the waveform to be generated, returning one sample. This should be called once per sample period.
-    */
     float Process();
 
-
-    /** Adds a value 0.0-1.0 (equivalent to 0.0-TWO_PI) to the current phase. Useful for PM and "FM" synthesis.
-    */
     void PhaseAdd(float _phase) { phase_ += _phase; }
-    /** Resets the phase to the input argument. If no argumeNt is present, it will reset phase to 0.0;
-    */
     void Reset(float _phase = 0.0f) { phase_ = _phase; }
 
   private:
@@ -118,12 +68,12 @@ class ZLFO
 {
 public:
     ZLFO() {};
-    void init(float sample_rate);
+    void  init(float sample_rate);
     float process();
-    void setDepth(float depth);
-    void setFrequency(float freq);
-    void setManual(float manual);
-    void setWaveform(uint8_t wf);
+    void  setDepth(float depth);
+    void  setFrequency(float freq);
+    void  setManual(float manual);
+    void  setWaveform(uint8_t wf);
 
     enum
     {
@@ -136,13 +86,8 @@ public:
 
 private:
     LFOEngine osc;
-
-    float depth;
-    float manual;
-
-    float offset;
-    uint8_t waveform;
+    float     depth;
+    float     manual;
+    float     offset;
+    uint8_t   waveform;
 };
-
-#endif
-#endif

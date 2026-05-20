@@ -7,9 +7,6 @@ using namespace daisy;
 using namespace daisysp;
 using namespace terrarium;
 
-// set controls
-// depth, feedback, rate, delay, mix
-
 ZFlanger flanger;
 DaisyPetal petal;
 
@@ -22,17 +19,16 @@ Parameter feedbackParam;
 Parameter lfoManualParam;
 Parameter lfoFreqParam;
 Parameter lfoDepthParam;
-// Parameter mixParam;
 
 Led led1;
 
-void InitControls(float samplerate) {
-    delayParam.Init(petal.knob[Terrarium::KNOB_1], 0.0, 1.0, Parameter::LINEAR);
-    feedbackParam.Init(petal.knob[Terrarium::KNOB_2], 0.0, 1.0, Parameter::LINEAR);
-    //mixParam.Init(petal.knob[Terrarium::KNOB_3], 0.0, 1.0, Parameter::LINEAR);
-    lfoManualParam.Init(petal.knob[Terrarium::KNOB_3], -1.0, 1.0, Parameter::LINEAR);
-    lfoFreqParam.Init(petal.knob[Terrarium::KNOB_4], 0.0, 10.0, Parameter::LOGARITHMIC);
-    lfoDepthParam.Init(petal.knob[Terrarium::KNOB_5], 0.0, 1.0, Parameter::LINEAR);
+void InitControls(float samplerate)
+{
+    delayParam.Init(petal.knob[Terrarium::KNOB_1],    0.0f,  1.0f,  Parameter::LINEAR);
+    feedbackParam.Init(petal.knob[Terrarium::KNOB_2], 0.0f,  1.0f,  Parameter::LINEAR);
+    lfoManualParam.Init(petal.knob[Terrarium::KNOB_3], -1.0f, 1.0f, Parameter::LINEAR);
+    lfoFreqParam.Init(petal.knob[Terrarium::KNOB_4],  0.0f,  10.0f, Parameter::LOGARITHMIC);
+    lfoDepthParam.Init(petal.knob[Terrarium::KNOB_5], 0.0f,  1.0f,  Parameter::LINEAR);
 
     led1.Init(petal.seed.GetPin(Terrarium::LED_1), false);
 }
@@ -54,21 +50,17 @@ void ProcessControls()
     case 4:
         lfotarget = lfoDepthParam.Process();
         break;
-   case 6:
+    case 6:
         petal.ProcessDigitalControls();
-        if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge()) // ON/OFF footswitch
+        if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
         {
             effectOn = !effectOn;
             led1.Set(effectOn ? 1.0f : 0.0f);
         }
         if(petal.switches[Terrarium::SWITCH_1].Pressed())
-        {
             waveform += 2;
-        }
         if(petal.switches[Terrarium::SWITCH_2].Pressed())
-        {
-            waveform +=1;
-        }
+            waveform += 1;
         flanger.setWaveform(waveform);
         break;
     }
@@ -86,13 +78,10 @@ void AudioCallback(AudioHandle::InputBuffer  in,
         fonepole(lfoDepth, lfotarget, .0001f);
         flanger.setLFODepth(lfoDepth);
 
-        out[0][i] = out[1][i] = in[0][i];
-
         if(effectOn)
-        {
-            float sig = flanger.process(in[0][i]);
-            out[0][i] = out[1][i] = sig;
-        }
+            out[0][i] = out[1][i] = flanger.process(in[0][i]);
+        else
+            out[0][i] = out[1][i] = in[0][i];
     }
 }
 
@@ -103,12 +92,19 @@ int main(void)
     float sample_rate = petal.AudioSampleRate();
 
     InitControls(sample_rate);
-
-    deltarget = del = 0.f;
-    lfotarget = lfoDepth = 0.f;
     flanger.init(sample_rate);
 
     petal.StartAdc();
+    petal.ProcessAnalogControls();
+    deltarget = del = delayParam.Process();
+    flanger.setDelay(del);
+    flanger.setFeedback(feedbackParam.Process());
+    flanger.setLFOManual(lfoManualParam.Process());
+    flanger.setLFOFreq(lfoFreqParam.Process());
+    lfotarget = lfoDepth = lfoDepthParam.Process();
+    flanger.setLFODepth(lfoDepth);
+    led1.Set(0.0f);
+
     petal.StartAudio(AudioCallback);
     while(1)
     {
