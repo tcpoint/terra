@@ -1,0 +1,46 @@
+/*
+	dsp/util.h
+	
+	Copyright 2002-12 Tim Goetze <tim@quitte.de>
+	
+	http://quitte.de/dsp/
+
+	Common math utility functions.
+
+*/
+/*
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 3
+	of the License, or (at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+	02111-1307, USA or point your web browser to http://www.gnu.org.
+*/
+
+#ifndef DSP_UTIL_H
+#define DSP_UTIL_H
+
+namespace DSP {
+
+typedef float sample_t;
+
+inline float pow2 (float x) { return x * x; }
+inline float pow3 (float x) { return x * pow2(x); }
+inline float pow4 (float x) { return pow2 (pow2(x)); }
+inline float pow5 (float x) { return x * pow4(x); }
+inline float pow6 (float x) { return pow3 (pow2(x)); }
+inline float pow7 (float x) { return x * (pow6 (x)); }
+inline float pow8 (float x) { return pow2 (pow4 (x)); }
+
+
+} /* namespace DSP */
+
+#endif /* DSP_UTIL_H */
