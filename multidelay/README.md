@@ -7,10 +7,12 @@ Set the dry/wet amount of this final mix with the encoder.
 
 | Control | Description | Comment |
 | --- | --- | --- |
-| Ctrls 1 - 3 - 5| Delay Time | Time for delays 1 through 3 |
-| Ctrl 2 - 4 - 5 | Feedback | Feedback for delays 1 through 3 |
-| Encoder | Dry/Wet | Set the dry/wet amount for the outputs |
-| SW 1 | Passthru | Illuminated when set to passthru |
+| Knob 1 | Delay Time 1 | |
+| Knob 2 | Delay Time 2 | |
+| Knob 3 | Delay Time 3 | |
+| Knob 4 | Feedback | Shared across all three delays |
+| Knob 5 | Dry/Wet | |
+| SW 1 | Passthru | LED on = active, off = passthru |
 | Audio In 1 | Audio input | |
 | Audio Out 1 - 2 | Mix Out | |
 

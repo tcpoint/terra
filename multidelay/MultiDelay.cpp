@@ -2,8 +2,6 @@
 #include "daisy_petal.h"
 #include "terrarium.h"
 
-#include <string>
-
 #define MAX_DELAY static_cast<size_t>(48000 * 1.f)
 
 using namespace daisy;
@@ -22,13 +20,12 @@ struct Delay
     float                        currentDelay;
     float                        delayTarget;
 
-    float Process(float in)
+    float Process(float in, float fb)
     {
-        //set delay times
         fonepole(currentDelay, delayTarget, .0002f);
         delay->SetDelay(currentDelay);
         float read = delay->Read();
-        delay->Write((feedback * read) + in);
+        delay->Write((fb * read) + in);
         return read;
     }
 };
@@ -38,10 +35,8 @@ Parameter delayParams[3];
 Parameter feedbackParam;
 Parameter mixParam;
 
-dsy_gpio led1;
-
-// int   drywet;
-bool  passThruOn;
+Led  led1;
+bool passThruOn;
 
 void ProcessControls();
 
@@ -53,18 +48,20 @@ static void AudioCallback(AudioHandle::InputBuffer  in,
 
     for(size_t i = 0; i < size; i++)
     {
-        float mix = 0;
-        //update delayline with feedback
-        for(int d = 0; d < 3; d++)
-        {
-            mix += delays[d].Process(in[0][i]);
-        }
+        float sample = in[0][i];
 
         if(passThruOn)
         {
-            wetdry = 0;
+            out[0][i] = out[1][i] = sample;
+            continue;
         }
-        mix       = (wetdry * mix) / 3.0f + (1.0f - wetdry) * in[0][i];
+
+        float mix = 0;
+        for(int d = 0; d < 3; d++)
+        {
+            mix += delays[d].Process(sample, feedback);
+        }
+        mix       = (wetdry * mix) / 3.0f + (1.0f - wetdry) * sample;
         out[0][i] = out[1][i] = mix;
     }
 }
@@ -77,25 +74,14 @@ void InitDelays(float samplerate)
         delayMems[i].Init();
         delays[i].delay = &delayMems[i];
         //3 delay times
-        int knob;
-        switch(i) {
-        case 0:
-            knob = Terrarium::KNOB_1;
-            break;
-        case 1:
-            knob = Terrarium::KNOB_2;
-            break;
-        case 2:
-            knob = Terrarium::KNOB_3;
-            break;
-        }
-        delayParams[i].Init(petal.knob[knob],
+        delayParams[i].Init(petal.knob[Terrarium::KNOB_1 + i],
                        samplerate * .05,
                        MAX_DELAY,
                        Parameter::LOGARITHMIC);
     }
-    feedbackParam.Init(petal.knob[Terrarium::KNOB_4], 0.0, 1.0, Parameter::LINEAR); 
-    mixParam.Init(petal.knob[Terrarium::KNOB_5], 0.0, 1.0, Parameter::LINEAR); 
+    feedbackParam.Init(petal.knob[Terrarium::KNOB_4], 0.0, 1.0, Parameter::LINEAR);
+    mixParam.Init(petal.knob[Terrarium::KNOB_5], 0.0, 1.0, Parameter::LINEAR);
+    led1.Init(petal.seed.GetPin(Terrarium::LED_1), false);
 }
 
 int main(void)
@@ -107,20 +93,15 @@ int main(void)
     InitDelays(samplerate);
 
     passThruOn = false;
+    led1.Set(1.0f);
 
     petal.StartAdc();
     petal.StartAudio(AudioCallback);
 
-    led1.pin = petal.seed.GetPin(22);
-    led1.mode = DSY_GPIO_MODE_OUTPUT_PP;
-    led1.pull = DSY_GPIO_NOPULL;
-    dsy_gpio_init(&led1);
-
     while(1)
     {
-        // Update Pass thru
-        dsy_gpio_write(&led1, passThruOn ? 0.0f : 1.0f);
-        petal.DelayMs(6);
+        led1.Update();
+        System::Delay(1);
     }
 }
 
@@ -141,5 +122,6 @@ void ProcessControls()
     if(petal.switches[Terrarium::FOOTSWITCH_1].RisingEdge())
     {
         passThruOn = !passThruOn;
+        led1.Set(passThruOn ? 0.0f : 1.0f);
     }
 }
