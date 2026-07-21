@@ -35,7 +35,37 @@ flags, and flash targets are all inherited from the generic Makefile in
 `DaisyExamples/libDaisy/core/Makefile`; individual effect Makefiles only set `TARGET`, `CPP_SOURCES`, and
 extra `C_INCLUDES` (most add `-I../Terrarium` for the shared hardware header).
 
-There is no test suite — verification is done by building, flashing to hardware, and listening.
+There is no test suite for the hardware build — verification is done by building, flashing to hardware,
+and listening.
+
+### Native (Linux desktop) builds
+
+Every effect also has a `<effect>/native/` directory with a standalone native build of the same DSP,
+runnable without any Daisy hardware:
+
+```
+cd <effect>/native
+make
+./<effect>-native [--wav <path>] [--<knob-flag> <value> ...]
+```
+
+- Uses `PortAudio` (`portaudio-2.0` via pkg-config) for audio I/O and `libsndfile` (`sndfile` via
+  pkg-config) for optional WAV input — both are plain `g++` builds, no ARM toolchain involved.
+- Without `--wav`, it opens a live duplex stream (mic/interface in, speakers out). With `--wav <path>`,
+  it reads the whole file up front, runs it through the same DSP, and plays the result once through
+  speakers before exiting (with ~2s of trailing silence padded on so delay/reverb tails aren't cut off).
+- Knobs and switches become CLI flags with the hardware's original min/max ranges (e.g. `--delay`,
+  `--feedback`, `--mix`); footswitch bypass and LEDs are dropped entirely (the effect is always active).
+  Parameters are set once at startup — there's no live knob movement to smooth, so the original
+  `fonepole`-based ramping is only kept where it's intrinsic to the DSP itself.
+- Each `native/main.cpp` reuses the effect's actual DSP code (the portable `DaisySP`/`DaisySP-LGPL`
+  classes, or the effect's own custom DSP files like `biquad.h`/`lowpass.h`/`ToneStack.h`) and drops only
+  the hardware-coupled pieces (`DaisyPetal`, `Parameter`+`AnalogControl`, `Led`). It does **not** reuse
+  code across different effects' `native/` dirs, consistent with the no-shared-library convention below.
+- A few effects needed one addition to compile standalone: `#include <cmath>`/`<cassert>` where the
+  original relied on transitive includes from `daisysp.h`, and (`chorus-caps` only) a local
+  `typedef unsigned int uint;` since its `dsp/Delay.h` expects newlib's BSD-style `uint`, which glibc
+  doesn't provide by default.
 
 ## Architecture
 
